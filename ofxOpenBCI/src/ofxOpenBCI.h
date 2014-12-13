@@ -16,13 +16,15 @@
 #define byte char
 
 const int DATAMODE_TXT = 0;
-const int DATAMODE_BIN = 1;
-const int DATAMODE_BIN_4CHAN = 4;
+const int DATAMODE_BIN_WAUX = 1;
+const int DATAMODE_BIN = 2;
 
 const int STATE_NOCOM = 0;
 const int STATE_COMINIT = 1;
-const int STATE_NORMAL = 2;
-const int COM_INIT_MSEC = 4000; //you may need to vary this for your computer or your Arduino
+const int STATE_SYNCWITHHARDWARE = 2;
+const int STATE_NORMAL = 3;
+const int STATE_STOPPED = 4;
+const int COM_INIT_MSEC = 3000; //you may need to vary this for your computer or your Arduino
 
 const byte BYTE_START = byte(0xA0);
 const byte BYTE_END = byte(0xC0);
@@ -33,12 +35,12 @@ const int MIN_PAYLOAD_LEN_INT32 = 1; //8 is the normal number, but there are sho
 
 struct dataPacket_ADS1299 {
 
-
     public:
-    std::vector<float> values;
+    vector<float> values;
     int sampleIndex;
     //Timestamp is the universal time (as opposed to relative to an initial timestamp)
     time_t timestamp;
+    dataPacket_ADS1299() {}
     dataPacket_ADS1299(int nValues) : values(nValues, 0){}
 
     int printToConsole() {
@@ -70,49 +72,37 @@ public:
     }
 };
 
-
-
 //--------------This is the OpenBCI OpenFrameworks code ------------------//
 class ofxOpenBCI {
 
-    public:
-
-
+public:
     ofxOpenBCI();
+    void init();
     void update(bool echoChar);
     void toggleFilter(bool turnOn);
     void triggerTestSignal(bool turnOn);
     void changeChannelState(unsigned Ichan,bool activate);
-
-    static string usedPort;
-
     vector<dataPacket_ADS1299> getData();
-
-    ofSerial serialDevice;
-
-    int dataMode;
     int startStreaming();
     int stopStreaming();
     bool connectionIsAlive();
+    bool isNewDataPacketAvailable();
+    int interpretBinaryMessageForward (int endInd);
+
+    ofSerial serialDevice;
+    int dataMode;
+    static string usedPort;
     bool filterApplied;
     int streamingMode;
-
     int missedCyclesCounter;
     vector<bool> enabledChannels;
 
-    bool isNewDataPacketAvailable();
-
-    int interpretBinaryMessageForward (int endInd);
-
-    private: int interpretTextMessage();
-
-    private: int curBuffIndex;
-    private: int interpretAsInt32(byte byteArray[]);
+private:
+    int interpretTextMessage();
+    int curBuffIndex;
+    int interpretAsInt32(byte byteArray[]);
     vector<byte>leftoverBytes;
-
-    private: vector<byte> currBuffer;
-    private: queue<dataPacket_ADS1299> outputPacketBuffer;
+    vector<byte> currBuffer;
+    queue<dataPacket_ADS1299> outputPacketBuffer;
     void sendSignalToBoard(string input);
-
 };
-

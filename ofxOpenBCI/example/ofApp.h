@@ -25,14 +25,11 @@
 
 #pragma once
 
-
 #include "ofMain.h"
 #include "ofxOpenBCI.h"
 #include "ofxHistoryPlot.h"
 
-
-using namespace ofx::IO;
-
+//#define LOG
 
 class ofApp: public ofBaseApp
 {
@@ -46,6 +43,7 @@ public:
     ofxOpenBCI ofxbci;
     ofxHistoryPlot * plot1; //manual
     ofxHistoryPlot * plot2;
+#ifdef LOG
     ofstream logFile;
-    
+#endif
 };

@@ -31,7 +31,6 @@
 //------------------------------------------------------------------------------
 void ofApp::setup()
 {
-
     cout << "In ofApp::setup()\n";
 
     //The numerical parameter is the length of the history
@@ -51,56 +50,57 @@ void ofApp::setup()
 	plot2->setLineWidth(3);
     plot2->setAutoRangeShrinksBack(true);
 
-    
+
     plot1->setDrawGrid(false);
     plot2->setDrawGrid(false);
-    
-    ofxbci.startStreaming();
-    
+
+//    ofxbci.startStreaming();
+#ifdef LOG
     time_t seconds = time(NULL);
     ostringstream filename;
-    
+
     filename << "~/Desktop/l" << seconds << ".csv";
     cout << "Filename: " << filename.str().c_str();
     logFile.open(filename.str().c_str());
     logFile << "timestamp,prompt,chan0,chan1,chan2,chan3,chan4,chan5,chan6,chan7,\n";
-    
-    
+#endif
 }
 
 //------------------------------------------------------------------------------
 void ofApp::update()
 {
-    
     //Get any and all bytes off the serial port
     ofxbci.update(false); //Param is to echo to the command line
     if(ofxbci.isNewDataPacketAvailable())
     {
-        vector<dataPacket_ADS1299> newData = ofxbci.getData();
-        
-        printf("Sees %i new packets\n", newData.size());
+        vector<dataPacket_ADS1299> newData(ofxbci.getData());
+        float data1, data2;
 
-        for (int i=0; i<newData.size(); ++i) {
-            plot1->update(newData[i].values[0]);
-            logFile << newData[i].values[0] << ",";
-            
-            plot2->update(newData[i].values[1]);
-            logFile << newData[i].values[1] << ",";
-            
-            logFile << "\n";
+        //printf("Sees %i new packets\n", (int)newData.size());
+
+        for (unsigned i = 0; i < newData.size(); ++i) {
+            if (newData[i].values.size()>1){
+                data1 = newData[i].values[0];
+                plot1->update(data1);
+
+                data2 = newData[i].values[1];
+                plot2->update(data2);
+#ifdef LOG
+                logFile << data1 << ",";
+                logFile << data2 << ",";
+                logFile << "\n";
+#endif
+            }
         }
     }
-
-    
 }
-
 
 //------------------------------------------------------------------------------
 void ofApp::draw()
 {
 	plot1->draw(10, 10, 1024, 240);
     plot2->draw(10, 300, 1024, 240);
-    
+
 }
 
 //------------------------------------------------------------------------------
@@ -110,12 +110,14 @@ void ofApp::keyPressed(int key)
     if (key=='b'){
         ofxbci.startStreaming();
     }
-    
+
     else if (key == 's')
     {
+        ofxbci.stopStreaming();
+#ifdef LOG
         logFile.close();
+#endif
     }
-    
-   
-}
 
+
+}
