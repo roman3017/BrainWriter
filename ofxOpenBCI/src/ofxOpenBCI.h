@@ -1,6 +1,6 @@
 //
 //  ofxOpenBCI.h
-//  
+//
 //
 //  Created by Daniel Goodwin on 4/08/13.
 //
@@ -40,11 +40,11 @@ struct dataPacket_ADS1299 {
     //Timestamp is the universal time (as opposed to relative to an initial timestamp)
     time_t timestamp;
     dataPacket_ADS1299(int nValues) : values(nValues, 0){}
-    
+
     int printToConsole() {
         cout <<"printToConsole: dataPacket = ";
         cout << sampleIndex;
-        for (int i=0; i < values.size(); i++) {
+        for (unsigned i=0; i < values.size(); i++) {
             cout << ", " << values[i];
         }
         cout << "\n";
@@ -52,7 +52,7 @@ struct dataPacket_ADS1299 {
     }
     int copyTo(dataPacket_ADS1299 & target) {
         target.sampleIndex = sampleIndex;
-        for (int i=0; i < values.size(); i++) {
+        for (unsigned i=0; i < values.size(); i++) {
             target.values[i] = values[i];
         }
         return 0;
@@ -62,11 +62,11 @@ struct dataPacket_ADS1299 {
 
 class filterConstants {
 public:
-    std::vector<double> a, b;
+    std::vector<double> b, a;
     string name;
-    
+
     filterConstants(const std::vector<double> & b_given, const std::vector<double> & a_given, const string & name_given): b(b_given), a(a_given), name(name_given){
-        
+
     }
 };
 
@@ -76,16 +76,16 @@ public:
 class ofxOpenBCI {
 
     public:
-        
+
 
     ofxOpenBCI();
     void update(bool echoChar);
     void toggleFilter(bool turnOn);
     void triggerTestSignal(bool turnOn);
-    void changeChannelState(int Ichan,bool activate);
-    
+    void changeChannelState(unsigned Ichan,bool activate);
+
     static string usedPort;
-    
+
     vector<dataPacket_ADS1299> getData();
 
     ofSerial serialDevice;
@@ -96,16 +96,16 @@ class ofxOpenBCI {
     bool connectionIsAlive();
     bool filterApplied;
     int streamingMode;
-    
+
     int missedCyclesCounter;
     vector<bool> enabledChannels;
 
     bool isNewDataPacketAvailable();
-    
+
     int interpretBinaryMessageForward (int endInd);
-    
+
     private: int interpretTextMessage();
-    
+
     private: int curBuffIndex;
     private: int interpretAsInt32(byte byteArray[]);
     vector<byte>leftoverBytes;
@@ -113,6 +113,6 @@ class ofxOpenBCI {
     private: vector<byte> currBuffer;
     private: queue<dataPacket_ADS1299> outputPacketBuffer;
     void sendSignalToBoard(string input);
-    
+
 };
 

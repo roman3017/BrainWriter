@@ -22,7 +22,7 @@
 #include <time.h>
 #include <sys/time.h>
 
-#import "ofxOpenBCI.h"
+#include "ofxOpenBCI.h"
 
 #define byte char
 #define IS_MAC 1
@@ -55,12 +55,12 @@ ofxOpenBCI::ofxOpenBCI()
 {
     cout << "Trying to set it up...\n";
     dataMode = DATAMODE_BIN_4CHAN; //DATAMODE_BIN;
-    
-    int currBuffIndex = 0;
-    int num_channels = 8;
+
+    //int currBuffIndex = 0;
+    //int num_channels = 8;
     curBuffIndex = 0;
-    
-    
+
+
     //Loop through all available
     //TODO: determine if mac/pc to automatically seed deviceQueryString
     #if IS_MAC
@@ -68,36 +68,36 @@ ofxOpenBCI::ofxOpenBCI()
     #else
     string deviceQueryString = "COM*";
     #endif
-    
+
     std::vector<ofSerialDeviceInfo> devicesInfo = serialDevice.getDeviceList();
-    
+
     for(std::size_t i = 0; i < devicesInfo.size(); ++i)
     {
         cout << "Trying to connect to: " << devicesInfo[i].getDeviceName() <<"\n";
-        
+
         if(devicesInfo[i].getDeviceName() == usedPort)
             continue;
-        
+
         bool success = serialDevice.setup(devicesInfo[i].getDeviceName(),
                                           115200);
                                           /*SerialDevice::DATA_BITS_EIGHT,
                                           SerialDevice::PAR_NONE,
                                           SerialDevice::STOP_ONE,
                                           SerialDevice::FLOW_CTRL_HARDWARE*/
-        
+
         if(success)
         {
-            ofLogNotice("ofApp::setup") << "Successfully setup " << devicesInfo[i] << "\n";
+            ofLogNotice("ofApp::setup") << "Successfully setup " << devicesInfo[i].getDeviceName() << "\n";
             ofxOpenBCI::usedPort = devicesInfo[i].getDeviceName();
             break;
         }
         else
         {
-            ofLogNotice("ofApp::setup") << "Unable to setup " << devicesInfo[i] << "\n";
+            ofLogNotice("ofApp::setup") << "Unable to setup " << devicesInfo[i].getDeviceName() << "\n";
         }
     }
     //serial_openBCI(serial);
-    
+
 }
 
 //ASSUMES A ONE CHARACTER INPUT!
@@ -108,7 +108,7 @@ void ofxOpenBCI::sendSignalToBoard(string input){
 }
 //start the data transfer using the current mode
 int ofxOpenBCI::startStreaming() {
-    
+
     //stopDataTransfer();
     switch (dataMode) {
         case DATAMODE_BIN:
@@ -125,7 +125,7 @@ int ofxOpenBCI::startStreaming() {
             break;
     }
     return 0;
-    
+
 }
 
 void ofxOpenBCI::toggleFilter(bool turnOn)
@@ -139,7 +139,7 @@ void ofxOpenBCI::toggleFilter(bool turnOn)
         sendSignalToBoard(command_deactivateFilters);
         cout << "Processing: OpenBCI_ADS1299: deactivating filter\n";
     }
-        
+
 }
 void ofxOpenBCI::triggerTestSignal(bool turnOn)
 {
@@ -160,20 +160,20 @@ int ofxOpenBCI::stopStreaming() {
 //the datapacket packet as necessary. (echo writes to console)
 //AT a sample rate of 250Hz we see about ~150 bytes per call of the update function
 void ofxOpenBCI::update(bool echoChar) {
-    
+
     struct timeval tv;
     gettimeofday(&tv, 0);
 
-    
+
     //First, see if there's anything in the leftover buffer and push into the currBuffer
     curBuffIndex=0;
     currBuffer.clear();
-    for (int i=0; i<leftoverBytes.size(); ++i) {
+    for (unsigned i=0; i<leftoverBytes.size(); ++i) {
         currBuffer.push_back(leftoverBytes[i]);
         curBuffIndex++;
     }
 
-    
+
     //Then, get all bytes off the serial port
     int bytesAvailable = serialDevice.available();
     //printf("UPDATE START (%i):\n",bytesAvailable);//, tv.tv_usec
@@ -183,13 +183,13 @@ void ofxOpenBCI::update(bool echoChar) {
     byte inByte;
     for (int i = 0; i<bytesAvailable; ++i) {
         inByte = inByte_arrayBIG[i];
-        
+
         if (echoChar) //cout << inByte << " ";
             printf("%02X ",inByte);
-        
+
         //accumulate the data in the buffer
         currBuffer.push_back(inByte);
-        
+
         //increment the buffer index for the next time
         curBuffIndex++;
     }//Finish the for loop around the input bytes
@@ -206,7 +206,7 @@ void ofxOpenBCI::update(bool echoChar) {
     int lastPacketEndIdx = curBuffIndex;
     while (currBuffer[lastPacketEndIdx]!=BYTE_END){
         lastPacketEndIdx--;
-        
+
         //And if there's no complete packets in this data
         if (lastPacketEndIdx<0){
             cout << "No complete packets found of " << currBuffer.size() << "bytes\n";
@@ -214,10 +214,10 @@ void ofxOpenBCI::update(bool echoChar) {
         }
     }
 //    printf("So lastPacketEndIdx points to a byte: %2X\n",currBuffer[lastPacketEndIdx]);
-    
+
     //Push the extra data into the leftOVerArray
     leftoverBytes.clear();
-    for (int i=lastPacketEndIdx+1; i<currBuffer.size(); ++i) {
+    for (unsigned i=lastPacketEndIdx+1; i<currBuffer.size(); ++i) {
         leftoverBytes.push_back(currBuffer[i]);
     }
 //    printf("Left %i bytes in the leftover vector\n", leftoverBytes.size());
@@ -227,7 +227,7 @@ void ofxOpenBCI::update(bool echoChar) {
     if (leftoverBytes.size()>MAX_LEFTOVER_SERIAL_BYTES) {
         leftoverBytes.clear();
     }
-    
+
     //Process all the packets we know we have
     //Go forward in the input array, from 0 the last end byte (that we found above)
     int nextIndexToTry = 0;
@@ -247,9 +247,9 @@ void ofxOpenBCI::update(bool echoChar) {
         else {// if(currBuffer[nextIndexToTry]==BYTE_END){
             nextIndexToTry++;
         }
-        
+
     }
-    
+
     //printf("UPDATE END\n");
     return;
 }
@@ -259,7 +259,7 @@ vector<dataPacket_ADS1299> ofxOpenBCI::getData()
 {
     //To be returned in the function
     vector<dataPacket_ADS1299> output;
-    
+
     int currentSize =outputPacketBuffer.size();
     //printf("Sees %i objects in the outputPacketBuffer", currentSize);
     for (int i = 0; i<currentSize; ++i) {
@@ -286,7 +286,7 @@ bool ofxOpenBCI::isNewDataPacketAvailable(){
 
 
 //activate or deactivate an EEG channel...channel counting is zero through nchan-1
-void ofxOpenBCI::changeChannelState(int Ichan,bool activate) {
+void ofxOpenBCI::changeChannelState(unsigned Ichan,bool activate) {
     bool serialPortConnected = true;
     if (serialPortConnected) {
         if ((Ichan >= 0) && (Ichan < command_activate_channel.size())) {
@@ -321,31 +321,31 @@ void ofxOpenBCI::changeChannelState(int Ichan,bool activate) {
 
 //Rewrote the interpretBinaryMessage fxn to avoid stumbling over a BYTE_END or BYTE_START on accident
 int ofxOpenBCI::interpretBinaryMessageForward(int startIdx) {
-    
+
     //assume curBuffIndex has already been incremented to the next starting spot
     int endIdx = startIdx;
-    
+
     unsigned char n_bytes = currBuffer[startIdx + 1]; //this is the number of bytes in the payload
-    
+
     //Counting forward, do we see the BYTE_END?
     if (currBuffer[(startIdx + 1 + n_bytes + 1)] != BYTE_END) {
         printf("Bad packet: %i, %i. Got: %i \n", startIdx, endIdx, startIdx + 1 + n_bytes + 1);
         endIdx = -1;
     }
     else{
-        
+
         endIdx = (startIdx + 1 + n_bytes + 1);
-        
+
         int nInt32 = n_bytes / 4;
-        
+
         dataPacket_ADS1299 dataPacket = dataPacket_ADS1299(nInt32);
         dataPacket.timestamp = time(NULL);
-        
+
         dataPacket.sampleIndex = interpretAsInt32(&currBuffer[startIdx+2]); //read the int32 value
-        
+
         //Full doc here: http://www.openbci.com/forums/topic/understanding-serial-interface/
         startIdx += 6;  //increment the start index
-        
+
         int nValToRead = min<int>(nInt32-1,dataPacket.values.size());
         for (int i=0; i < nValToRead;i++) {
             dataPacket.values[i] = interpretAsInt32(&currBuffer[startIdx])*COUNT_TO_MICROVOLT; //read the int32 value
@@ -353,8 +353,8 @@ int ofxOpenBCI::interpretBinaryMessageForward(int startIdx) {
         }
         outputPacketBuffer.push(dataPacket);
     }
-    
-    
+
+
     //printf("\n");
     return endIdx;
 }
@@ -368,7 +368,7 @@ int ofxOpenBCI::interpretAsInt32(byte byteArray[]) {
 //               ((0xFF & byteArray[2]) << 8) |
 //               (0xFF & byteArray[3])
 //               );
-    
+
     //little endian (worked for Mac)
     return int(
                ((0xFF & byteArray[3]) << 24) |
