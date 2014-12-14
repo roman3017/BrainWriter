@@ -36,26 +36,26 @@ void ofApp::setup()
 
     //The numerical parameter is the length of the history
     plot1 = new ofxHistoryPlot( NULL, "Chan0", 400, false); //NULL cos we don't want it to auto-update. confirmed by "true"
-	plot1->setRange(-maxval, maxval);
-	plot1->setColor(ofColor(0,255,0));
-	plot1->setShowNumericalInfo(true);
-	plot1->setRespectBorders(true);
-	plot1->setLineWidth(1);
+    plot1->setRange(-maxval, maxval);
+    plot1->setColor(ofColor(0,255,0));
+    plot1->setShowNumericalInfo(true);
+    plot1->setRespectBorders(true);
+    plot1->setLineWidth(1);
     plot1->setBackgroundColor(ofColor(0,220)); //custom bg color
     //plot1->setAutoRangeShrinksBack(true);
     plot1->setDrawGrid(false);
 
     plot2 = new ofxHistoryPlot( NULL, "Chan1", 400, false); //NULL cos we don't want it to auto-update. confirmed by "true"
-	plot2->setRange(-maxval, maxval);
-	plot2->setColor(ofColor(0,255,0));
-	plot2->setShowNumericalInfo(true);
-	plot2->setRespectBorders(true);
-	plot2->setLineWidth(1);
+    plot2->setRange(-maxval, maxval);
+    plot2->setColor(ofColor(0,255,0));
+    plot2->setShowNumericalInfo(true);
+    plot2->setRespectBorders(true);
+    plot2->setLineWidth(1);
     plot2->setBackgroundColor(ofColor(0,220)); //custom bg color
     //plot2->setAutoRangeShrinksBack(true);
     plot2->setDrawGrid(false);
 
-    //keyPressed((int)'b');
+    keyPressed((int)'b');
 }
 
 //------------------------------------------------------------------------------
@@ -63,26 +63,24 @@ void ofApp::update()
 {
     //Get any and all bytes off the serial port
     ofxbci.update(false); //Param is to echo to the command line
-    if(ofxbci.isNewDataPacketAvailable())
-    {
-        vector<dataPacket_ADS1299> newData(ofxbci.getData());
-        float data1, data2;
+    if (!ofxbci.isNewDataPacketAvailable())
+        return;
 
-        //printf("Sees %i new packets\n", (int)newData.size());
+    vector<dataPacket_ADS1299> newData(ofxbci.getData());
+    float data1, data2;
 
-        for (unsigned i = 0; i < newData.size(); ++i) {
-            if (newData[i].values.size()>1){
-                data1 = newData[i].values[0];
-                plot1->update(data1);
+    //printf("Sees %i new packets\n", (int)newData.size());
 
-                data2 = newData[i].values[1];
-                plot2->update(data2);
+    for (unsigned i = 0; i < newData.size(); ++i) {
+        if (newData[i].values.size()>1) {
+            data1 = newData[i].values[0];
+            plot1->update(data1);
+
+            data2 = newData[i].values[1];
+            plot2->update(data2);
 #ifdef LOG
-                logFile << data1 << ",";
-                logFile << data2 << ",";
-                logFile << "\n";
+            logFile << data1 << "," << data2 << "," << "\n";
 #endif
-            }
         }
     }
 }
@@ -90,7 +88,7 @@ void ofApp::update()
 //------------------------------------------------------------------------------
 void ofApp::draw()
 {
-	plot1->draw(10, 10, 1024, 240);
+    plot1->draw(10, 10, 1024, 240);
     plot2->draw(10, 300, 1024, 240);
 }
 
