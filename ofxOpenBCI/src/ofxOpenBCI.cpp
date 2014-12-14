@@ -233,25 +233,24 @@ void ofxOpenBCI::update(bool echoChar)
 
     //Process all the packets we know we have
     //Go forward in the input array, from 0 the last end byte (that we found above)
-    int nextIndexToTry = 0;
+    unsigned nextIndexToTry = 0;
     int tempResult = 0;
-    while (nextIndexToTry < lastPacketEndIdx) {
+    while ((int)nextIndexToTry < lastPacketEndIdx) {
 
-        if(currBuffer[nextIndexToTry] == BYTE_START){
+        if (currBuffer[nextIndexToTry] == BYTE_START){
+            if (currBuffer.size() < 32 + nextIndexToTry)
+                return;//not enough samples
             //If the message is succesfully created, nextIndexToTry is updated to be
             tempResult = interpretBinaryMessageForward(nextIndexToTry);
             if (tempResult==-1){ //No end byte was seen for that packet and packet's length byte
                 nextIndexToTry++;
-            }
-            else {   //We have just processed a packet successfully
+            } else {   //We have just processed a packet successfully
                 nextIndexToTry = tempResult;
             }
-        }
-        else {// if(currBuffer[nextIndexToTry]==BYTE_END){
+        } else {// if(currBuffer[nextIndexToTry]==BYTE_END){
             nextIndexToTry++;
         }
     }
-
     //printf("UPDATE END\n");
     return;
 }
@@ -327,62 +326,64 @@ void ofxOpenBCI::changeChannelState(unsigned Ichan,bool activate)
 int ofxOpenBCI::interpretBinaryMessageForward(int startIdx)
 {
     //assume curBuffIndex has already been incremented to the next starting spot
-    int endIdx = startIdx;
+    int endIdx = -1;
+    int nInt32 = 8;
+    unsigned char n_bytes = 32; //this is the number of bytes in the payload
 
-    unsigned char n_bytes = currBuffer[startIdx + 1]; //this is the number of bytes in the payload
+    if (currBuffer[startIdx] != BYTE_START)
+        throw;
 
     //Counting forward, do we see the BYTE_END?
-    if (currBuffer[(startIdx + 1 + n_bytes + 1)] != BYTE_END) {
-        //printf("Bad packet: %i, %i. Got: %i \n", startIdx, endIdx, startIdx + 1 + n_bytes + 1);
-        endIdx = -1;
-    }
-    else{
+    if (currBuffer[startIdx + n_bytes] != BYTE_END) {
+        printf("Bad packet: %i, %i. Got: %.02x \n", startIdx, endIdx, currBuffer[startIdx + n_bytes]);
+    } else {
 
-        endIdx = (startIdx + 1 + n_bytes + 1);
-
-        int nInt32 = n_bytes / 4;
+        endIdx = startIdx + n_bytes;
 
         dataPacket_ADS1299 dataPacket = dataPacket_ADS1299(nInt32);
         dataPacket.timestamp = time(NULL);
+        dataPacket.sampleIndex = (int)currBuffer[startIdx+1];
 
-        dataPacket.sampleIndex = interpretAsInt32(&currBuffer[startIdx+2]); //read the int32 value
-
-        //Full doc here: http://www.openbci.com/forums/topic/understanding-serial-interface/
-        startIdx += 6;  //increment the start index
-
-        int nValToRead = min<int>(nInt32-1,dataPacket.values.size());
-        for (int i=0; i < nValToRead;i++) {
-            dataPacket.values[i] = interpretAsInt32(&currBuffer[startIdx])*COUNT_TO_MICROVOLT; //read the int32 value
-            startIdx += 4;  //increment the start index
+        //Full doc here: http://docs.openbci.com/05-OpenBCI_Streaming_Data_Format
+        startIdx += 2;  //increment the start index
+        for (int i = 0; i < nInt32; i++) {
+            dataPacket.values[i] = interpret24bitAsInt32(&currBuffer[startIdx]);
+            startIdx += 3;  //increment the start index
         }
+
         outputPacketBuffer.push(dataPacket);
     }
-
 
     //printf("\n");
     return endIdx;
 }
 
-
-int ofxOpenBCI::interpretAsInt32(byte byteArray[])
+int ofxOpenBCI::interpret24bitAsInt32(byte byteArray[])
 {
-    //big endian
-//    return int(
-//               ((0xFF & byteArray[0]) << 24) |
-//               ((0xFF & byteArray[1]) << 16) |
-//               ((0xFF & byteArray[2]) << 8) |
-//               (0xFF & byteArray[3])
-//               );
-
-    //little endian (worked for Mac)
-    return int(
-               ((0xFF & byteArray[3]) << 24) |
-               ((0xFF & byteArray[2]) << 16) |
-               ((0xFF & byteArray[1]) << 8) |
-               (0xFF & byteArray[0])
-               );
+    int newInt = (
+        ((0xFF & byteArray[0]) << 16) |
+        ((0xFF & byteArray[1]) << 8) |
+        (0xFF & byteArray[2]));
+    if ((newInt & 0x00800000) > 0) {
+        newInt |= 0xFF000000;
+    } else {
+        newInt &= 0x00FFFFFF;
+    }
+    return newInt;
 }
 
+int ofxOpenBCI::interpret16bitAsInt32(byte byteArray[])
+{
+    int newInt = (
+        ((0xFF & byteArray[0]) << 8) |
+        (0xFF & byteArray[1]));
+    if ((newInt & 0x00008000) > 0) {
+        newInt |= 0xFFFF0000;
+    } else {
+        newInt &= 0x0000FFFF;
+    }
+    return newInt;
+}
 
 int ofxOpenBCI::interpretTextMessage()
 {

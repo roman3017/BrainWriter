@@ -32,26 +32,27 @@
 void ofApp::setup()
 {
     cout << "In ofApp::setup()\n";
+    float maxval = (float)(1<<23);
 
     //The numerical parameter is the length of the history
     plot1 = new ofxHistoryPlot( NULL, "Chan0", 400, false); //NULL cos we don't want it to auto-update. confirmed by "true"
-	plot1->setRange(0, ofGetHeight());
-	plot1->setColor( ofColor(200,10,200) );
+	plot1->setRange(-maxval, maxval);
+	plot1->setColor(ofColor(0,255,0));
 	plot1->setShowNumericalInfo(true);
 	plot1->setRespectBorders(true);
-	plot1->setLineWidth(3);
-    plot1->setAutoRangeShrinksBack(true);
+	plot1->setLineWidth(1);
+    plot1->setBackgroundColor(ofColor(0,220)); //custom bg color
+    //plot1->setAutoRangeShrinksBack(true);
+    plot1->setDrawGrid(false);
 
     plot2 = new ofxHistoryPlot( NULL, "Chan1", 400, false); //NULL cos we don't want it to auto-update. confirmed by "true"
-	plot2->setRange(0, ofGetHeight());
-	plot2->setColor( ofColor(200,10,200) );
+	plot2->setRange(-maxval, maxval);
+	plot2->setColor(ofColor(0,255,0));
 	plot2->setShowNumericalInfo(true);
 	plot2->setRespectBorders(true);
-	plot2->setLineWidth(3);
-    plot2->setAutoRangeShrinksBack(true);
-
-
-    plot1->setDrawGrid(false);
+	plot2->setLineWidth(1);
+    plot2->setBackgroundColor(ofColor(0,220)); //custom bg color
+    //plot2->setAutoRangeShrinksBack(true);
     plot2->setDrawGrid(false);
 
 //    ofxbci.startStreaming();

@@ -35,15 +35,15 @@ const int MIN_PAYLOAD_LEN_INT32 = 1; //8 is the normal number, but there are sho
 
 struct dataPacket_ADS1299 {
 
-    public:
     vector<float> values;
     int sampleIndex;
-    //Timestamp is the universal time (as opposed to relative to an initial timestamp)
     time_t timestamp;
-    dataPacket_ADS1299() {}
-    dataPacket_ADS1299(int nValues) : values(nValues, 0){}
 
-    int printToConsole() {
+    dataPacket_ADS1299() {}
+    dataPacket_ADS1299(int nValues): values(nValues, 0){}
+
+    int printToConsole()
+    {
         cout <<"printToConsole: dataPacket = ";
         cout << sampleIndex;
         for (unsigned i=0; i < values.size(); i++) {
@@ -52,7 +52,9 @@ struct dataPacket_ADS1299 {
         cout << "\n";
         return 0;
     }
-    int copyTo(dataPacket_ADS1299 & target) {
+
+    int copyTo(dataPacket_ADS1299& target)
+    {
         target.sampleIndex = sampleIndex;
         for (unsigned i=0; i < values.size(); i++) {
             target.values[i] = values[i];
@@ -67,9 +69,7 @@ public:
     std::vector<double> b, a;
     string name;
 
-    filterConstants(const std::vector<double> & b_given, const std::vector<double> & a_given, const string & name_given): b(b_given), a(a_given), name(name_given){
-
-    }
+    filterConstants(const std::vector<double> & b_given, const std::vector<double> & a_given, const string & name_given): b(b_given), a(a_given), name(name_given){}
 };
 
 //--------------This is the OpenBCI OpenFrameworks code ------------------//
@@ -82,12 +82,12 @@ public:
     void toggleFilter(bool turnOn);
     void triggerTestSignal(bool turnOn);
     void changeChannelState(unsigned Ichan,bool activate);
-    vector<dataPacket_ADS1299> getData();
     int startStreaming();
     int stopStreaming();
     bool connectionIsAlive();
     bool isNewDataPacketAvailable();
-    int interpretBinaryMessageForward (int endInd);
+    int interpretBinaryMessageForward(int endInd);
+    vector<dataPacket_ADS1299> getData();
 
     ofSerial serialDevice;
     int dataMode;
@@ -99,10 +99,12 @@ public:
 
 private:
     int interpretTextMessage();
+    void sendSignalToBoard(string input);
+    int interpret24bitAsInt32(byte byteArray[]);
+    int interpret16bitAsInt32(byte byteArray[]);
+
     int curBuffIndex;
-    int interpretAsInt32(byte byteArray[]);
-    vector<byte>leftoverBytes;
+    vector<byte> leftoverBytes;
     vector<byte> currBuffer;
     queue<dataPacket_ADS1299> outputPacketBuffer;
-    void sendSignalToBoard(string input);
 };
