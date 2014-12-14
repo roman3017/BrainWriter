@@ -55,16 +55,7 @@ void ofApp::setup()
     //plot2->setAutoRangeShrinksBack(true);
     plot2->setDrawGrid(false);
 
-//    ofxbci.startStreaming();
-#ifdef LOG
-    time_t seconds = time(NULL);
-    ostringstream filename;
-
-    filename << "~/Desktop/l" << seconds << ".csv";
-    cout << "Filename: " << filename.str().c_str();
-    logFile.open(filename.str().c_str());
-    logFile << "timestamp,prompt,chan0,chan1,chan2,chan3,chan4,chan5,chan6,chan7,\n";
-#endif
+    //keyPressed((int)'b');
 }
 
 //------------------------------------------------------------------------------
@@ -101,24 +92,25 @@ void ofApp::draw()
 {
 	plot1->draw(10, 10, 1024, 240);
     plot2->draw(10, 300, 1024, 240);
-
 }
 
 //------------------------------------------------------------------------------
 void ofApp::keyPressed(int key)
 {
-
-    if (key=='b'){
+    if (key=='b') {
+#ifdef LOG
+        time_t seconds = time(NULL);
+        ostringstream filename;
+        filename << "~/Desktop/l" << seconds << ".csv";
+        cout << "Filename: " << filename.str().c_str();
+        logFile.open(filename.str().c_str());
+        logFile << "timestamp,prompt,chan0,chan1,chan2,chan3,chan4,chan5,chan6,chan7,\n";
+#endif
         ofxbci.startStreaming();
-    }
-
-    else if (key == 's')
-    {
+    } else if (key == 's') {
         ofxbci.stopStreaming();
 #ifdef LOG
         logFile.close();
 #endif
     }
-
-
 }

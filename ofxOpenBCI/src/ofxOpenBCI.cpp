@@ -57,10 +57,7 @@ ofxOpenBCI::ofxOpenBCI()
 {
     cout << "Trying to set it up...\n";
     dataMode = DATAMODE_BIN;
-    missedCyclesCounter=0;
-
-//    int currBuffIndex = 0;
-//    int num_channels = 8;
+    missedCyclesCounter = 0;
     curBuffIndex = 0;
 
 
@@ -74,22 +71,18 @@ ofxOpenBCI::ofxOpenBCI()
 
     std::vector<ofSerialDeviceInfo> devicesInfo = serialDevice.getDeviceList();
 
-    for(std::size_t i = 0; i < devicesInfo.size(); ++i)
-    {
+    for(std::size_t i = 0; i < devicesInfo.size(); ++i) {
         cout << "Trying to connect to: " << devicesInfo[i].getDeviceName() <<"\n";
 
         if(devicesInfo[i].getDeviceName() == usedPort)
             continue;
 
         bool success = serialDevice.setup(devicesInfo[i].getDeviceName(),115200);
-        if(success)
-        {
+        if(success) {
             ofLogNotice("ofApp::setup") << "Successfully setup " << devicesInfo[i].getDeviceName();
             ofxOpenBCI::usedPort = devicesInfo[i].getDeviceName();
             break;
-        }
-        else
-        {
+        } else {
             ofLogNotice("ofApp::setup") << "Unable to setup " << devicesInfo[i].getDeviceName();
         }
     }
@@ -105,7 +98,7 @@ void ofxOpenBCI::sendSignalToBoard(string input)
 }
 
 //start the data transfer using the current mode
-int ofxOpenBCI::startStreaming()
+void ofxOpenBCI::startStreaming()
 {
     //sendSignalToBoard(command_showSettings);
     //sendSignalToBoard(command_softReset);
@@ -125,7 +118,6 @@ int ofxOpenBCI::startStreaming()
             cout << "Processing: OpenBCI_ADS1299: starting text\n";
             break;
     }
-    return 0;
 }
 
 void ofxOpenBCI::toggleFilter(bool turnOn)
@@ -133,9 +125,7 @@ void ofxOpenBCI::toggleFilter(bool turnOn)
     if (turnOn){
         sendSignalToBoard(command_activateFilters);
         cout << "Processing: OpenBCI_ADS1299: engaging filter\n";
-    }
-    else
-    {
+    } else {
         sendSignalToBoard(command_deactivateFilters);
         cout << "Processing: OpenBCI_ADS1299: deactivating filter\n";
     }
@@ -147,12 +137,11 @@ void ofxOpenBCI::triggerTestSignal(bool turnOn)
     cout << "Generating test signal\n";
 }
 
-int ofxOpenBCI::stopStreaming()
+void ofxOpenBCI::stopStreaming()
 {
     sendSignalToBoard(command_stop);
     serialDevice.flush(); // clear anything in the com port's buffer
     cout << "Streaming stop\n";
-    return 0;
 }
 
 //read from the serial port
@@ -198,7 +187,7 @@ void ofxOpenBCI::update(bool echoChar)
     }//Finish the for loop around the input bytes
 
     //If there was no data on the wire, then we're done
-    if (curBuffIndex == 0){
+    if (curBuffIndex == 0) {
         //printf("No data on wire\n");
         return;
     }
@@ -207,7 +196,7 @@ void ofxOpenBCI::update(bool echoChar)
     //Roll back the pointer to the last end byte seen. Store any extra bytes between the end of the buffer
     //and the last endIdx in the leftoverBytes array.
     int lastPacketEndIdx = curBuffIndex;
-    while (currBuffer[lastPacketEndIdx] != BYTE_END){
+    while (currBuffer[lastPacketEndIdx] != BYTE_END) {
         lastPacketEndIdx--;
 
         //And if there's no complete packets in this data
@@ -237,7 +226,7 @@ void ofxOpenBCI::update(bool echoChar)
     int tempResult = 0;
     while ((int)nextIndexToTry < lastPacketEndIdx) {
 
-        if (currBuffer[nextIndexToTry] == BYTE_START){
+        if (currBuffer[nextIndexToTry] == BYTE_START) {
             if (currBuffer.size() < 32 + nextIndexToTry)
                 return;//not enough samples
             //If the message is succesfully created, nextIndexToTry is updated to be
@@ -269,10 +258,10 @@ vector<dataPacket_ADS1299> ofxOpenBCI::getData()
         output[i] = outputPacketBuffer.front();
         outputPacketBuffer.pop();
     }
-    if (output.size() == 0){
+
+    if (output.size() == 0) {
         missedCyclesCounter++;
-        if (missedCyclesCounter > MAX_MISSED_CYCLES)
-        {
+        if (missedCyclesCounter > MAX_MISSED_CYCLES) {
             printf("SEES NO DATA ON DEVICE SO STARTING STREAMING AGAIN");
 //            startStreaming();
             missedCyclesCounter = 0;
@@ -307,20 +296,22 @@ void ofxOpenBCI::changeChannelState(unsigned Ichan,bool activate)
 
 //interpret the data. Only called when the last seen byte was BYTE_END
 /*
- A Packet looks like this:
- 0: Start_char 0xA0
- 1: Length of payload
- 2-5: Sample number
- 6-9: Chan0 (32 bit signed int)
- 10-13: Chan1 (32 bit signed int
- 14: Chan2 (32 bit signed int
- 18: Chan3 (32 bit signed int
- 22: Chan4 (32 bit signed int
- 26: Chan5 (32 bit signed int
- 30: Chan6 (32 bit signed int
- 34-37: Chan7 (32 bit signed int
- 38: End_char 0xC0
- */
+A Packet looks like this:
+Byte 1: 0xA0
+Byte 2: Sample Number
+Bytes 3-5: Data value for EEG channel 1
+Bytes 6-8: Data value for EEG channel 2
+Bytes 9-11: Data value for EEG channel 3
+Bytes 12-14: Data value for EEG channel 4
+Bytes 15-17: Data value for EEG channel 5
+Bytes 18-20: Data value for EEG channel 6
+Bytes 21-23: Data value for EEG channel 6
+Bytes 24-26: Data value for EEG channel 8
+Bytes 27-28: Data value for accelerometer channel X
+Bytes 29-30: Data value for accelerometer channel Y
+Bytes 31-32: Data value for accelerometer channel Z
+Byte 33: 0xC0
+*/
 
 //Rewrote the interpretBinaryMessage fxn to avoid stumbling over a BYTE_END or BYTE_START on accident
 int ofxOpenBCI::interpretBinaryMessageForward(int startIdx)
@@ -336,23 +327,23 @@ int ofxOpenBCI::interpretBinaryMessageForward(int startIdx)
     //Counting forward, do we see the BYTE_END?
     if (currBuffer[startIdx + n_bytes] != BYTE_END) {
         printf("Bad packet: %i, %i. Got: %.02x \n", startIdx, endIdx, currBuffer[startIdx + n_bytes]);
-    } else {
-
-        endIdx = startIdx + n_bytes;
-
-        dataPacket_ADS1299 dataPacket = dataPacket_ADS1299(nInt32);
-        dataPacket.timestamp = time(NULL);
-        dataPacket.sampleIndex = (int)currBuffer[startIdx+1];
-
-        //Full doc here: http://docs.openbci.com/05-OpenBCI_Streaming_Data_Format
-        startIdx += 2;  //increment the start index
-        for (int i = 0; i < nInt32; i++) {
-            dataPacket.values[i] = interpret24bitAsInt32(&currBuffer[startIdx]);
-            startIdx += 3;  //increment the start index
-        }
-
-        outputPacketBuffer.push(dataPacket);
+        return endIdx;
     }
+
+    endIdx = startIdx + n_bytes;
+
+    dataPacket_ADS1299 dataPacket(nInt32);
+    dataPacket.timestamp = time(NULL);
+    dataPacket.sampleIndex = (int)currBuffer[startIdx+1];
+
+    //Full doc here: http://docs.openbci.com/05-OpenBCI_Streaming_Data_Format
+    startIdx += 2;  //increment the start index
+    for (int i = 0; i < nInt32; i++) {
+        dataPacket.values[i] = interpret24bitAsInt32(&currBuffer[startIdx]);
+        startIdx += 3;  //increment the start index
+    }
+
+    outputPacketBuffer.push(dataPacket);
 
     //printf("\n");
     return endIdx;

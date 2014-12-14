@@ -37,9 +37,8 @@ public:
     void setup();
     void update();
     void draw();
-
     void keyPressed(int key);
-
+private:
     ofxOpenBCI ofxbci;
     ofxHistoryPlot * plot1; //manual
     ofxHistoryPlot * plot2;

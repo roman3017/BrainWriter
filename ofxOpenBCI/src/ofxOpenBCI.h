@@ -10,8 +10,6 @@
 #include "ofMain.h"
 #include "ofSerial.h"
 
-//using namespace ofx::IO;
-
 #define OPENBCI_BAUDRATE 115200
 #define byte char
 
@@ -28,10 +26,8 @@ const int COM_INIT_MSEC = 3000; //you may need to vary this for your computer or
 
 const byte BYTE_START = byte(0xA0);
 const byte BYTE_END = byte(0xC0);
-const byte CHAR_END = byte(0xA0);  //line feed?
 const int LEN_SERIAL_BUFF_CHAR = 1000;
 const int MIN_PAYLOAD_LEN_INT32 = 1; //8 is the normal number, but there are shorter modes to enable Bluetooth
-
 
 struct dataPacket_ADS1299 {
 
@@ -74,7 +70,6 @@ public:
 
 //--------------This is the OpenBCI OpenFrameworks code ------------------//
 class ofxOpenBCI {
-
 public:
     ofxOpenBCI();
     void init();
@@ -82,8 +77,9 @@ public:
     void toggleFilter(bool turnOn);
     void triggerTestSignal(bool turnOn);
     void changeChannelState(unsigned Ichan,bool activate);
-    int startStreaming();
-    int stopStreaming();
+    void startStreaming();
+    void stopStreaming();
+    void sendSignalToBoard(string input);
     bool connectionIsAlive();
     bool isNewDataPacketAvailable();
     int interpretBinaryMessageForward(int endInd);
@@ -99,7 +95,6 @@ public:
 
 private:
     int interpretTextMessage();
-    void sendSignalToBoard(string input);
     int interpret24bitAsInt32(byte byteArray[]);
     int interpret16bitAsInt32(byte byteArray[]);
 
