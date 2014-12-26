@@ -209,8 +209,9 @@ void ofxOpenBCI::update(bool echoChar)
 
     //Push the extra data into the leftOVerArray
     leftoverBytes.clear();
+    leftoverBytes.resize(currBuffer.size()-lastPacketEndIdx-1);
     for (unsigned i=lastPacketEndIdx+1; i<currBuffer.size(); ++i) {
-        leftoverBytes.push_back(currBuffer[i]);
+        leftoverBytes[i-lastPacketEndIdx-1] = currBuffer[i];
     }
 //    printf("Left %i bytes in the leftover vector\n", leftoverBytes.size());
 
